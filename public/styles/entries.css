@@ -1,0 +1,18 @@
+#entry {
+  margin-bottom: 1rem;
+}
+
+#entry input {
+  width: 100%;
+}
+
+.entry {
+  background-color: #eee;
+  border-radius: 5px;
+  margin-bottom: 5px;
+  padding: 5px;
+}
+
+.entry span {
+  margin-right: 5px;
+}
