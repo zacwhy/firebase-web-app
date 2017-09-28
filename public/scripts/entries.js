@@ -68,15 +68,26 @@ function renderEntries(entries) {
 
 function renderEntry({value: {amount, date, description, from, to}}) {
   return div({class: 'entry'}, [
-    div([
-      span(from),
-      span('&#x2794;'),
-      span(to),
-      span(date)
+    div({class: 'header'}, [
+      span({class: 'label red'}, from),
+      span({class: 'label blue'}, to),
+      span({class: 'date'}, dateToString(new Date(date)))
     ]),
     div([
-      span(amount),
+      span({class: 'label grey'}, '$' + centsToString(amount)),
       span(description)
     ])
   ])
+}
+
+function dateToString(date) {
+  return date.toLocaleDateString('en-SG', {
+    month: 'short',
+    day: 'numeric',
+    weekday: 'short'
+  })
+}
+
+function centsToString(cents) {
+  return (cents / 100).toFixed(2);
 }

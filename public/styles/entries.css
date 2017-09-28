@@ -1,3 +1,8 @@
+html {
+  font-family: sans-serif;
+  font-size: 12px
+}
+
 #entry {
   margin-bottom: 1rem;
 }
@@ -15,4 +20,41 @@
 
 .entry span {
   margin-right: 5px;
+}
+
+.header {
+  display: flex;
+}
+
+.date {
+  color: #999;
+  flex: 1;
+  font-size: 0.9rem;
+  text-align: right;
+}
+
+.label {
+  border-radius: 3px;
+  display: inline-block;
+  font-weight: 400;
+  margin-bottom: .5em;
+  padding: 3px 8px;
+}
+
+.red {
+  background-color: #db2828;
+  border-color: #db2828;
+  color: #fff;
+}
+
+.blue {
+  background-color: #2185d0;
+  border-color: #2185d0;
+  color: #fff;
+}
+
+.grey {
+  background-color: #767676;
+  border-color: #767676;
+  color: #fff;
 }
