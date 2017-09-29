@@ -1,10 +1,3 @@
-// Initialize Firebase
-firebase.initializeApp(config)
-
-//  const bigOne = document.getElementById('bigOne')
-//  const dbRef = firebase.database().ref().child('text')
-//  dbRef.on('value', snap => bigOne.innerText = snap.val())
-
 const $ = selector => document.querySelector(selector)
 const amountInput = $('#amount')
 const dateInput = $('#date')
