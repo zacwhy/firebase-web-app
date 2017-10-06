@@ -77,15 +77,11 @@ function renderEntries(entries) {
 
 function renderEntry({value: {amount, date, description, from, to}}) {
   return div({class: 'entry'}, [
-    div({class: 'header'}, [
-      span({class: 'label red'}, from),
-      span({class: 'label blue'}, to),
-      span({class: 'date'}, dateToString(new Date(date)))
-    ]),
-    div([
-      span({class: 'label grey'}, '$' + centsToString(amount)),
-      span(description)
-    ])
+    span({class: 'label grey'}, '$' + centsToString(amount)),
+    span({class: 'label red'}, from),
+    span({class: 'label blue'}, to),
+    span(description),
+    span({class: 'date'}, dateToString(new Date(date)))
   ])
 }
 
