@@ -10,8 +10,23 @@ const entryListRef = firebase.database().ref('entries')
 
 entryListRef.once('value')
   .then(snapshot => Object.entries(snapshot.val()).map(([key, value]) => ({key, value})))
-  .then(entries => entries.sort(orderByDesc(x => x.key)))
+  .then(entries => entries.sort(compareEntry))
   .then(entries => $('#entries').innerHTML = renderEntries(entries))
+
+function compareEntry(a, b) {
+  const fns = [
+    orderByDesc(x => x.value.date),
+    orderByDesc(x => x.key)
+  ]
+
+  for (let i = 0; i < fns.length; i++) {
+    const fn = fns[i]
+    const result = fn(a, b)
+    if (result !== 0) {
+      return result
+    }
+  }
+}
 
 entryListRef.on('child_added', data => console.log(new Date(), 'child_added', data.key, data.val()))
 entryListRef.on('child_changed', data => console.log(new Date(), 'child_changed', data.key, data.val()))
@@ -27,6 +42,7 @@ $('#entry').onsubmit = () => {
   const status = $('#status')
 
   const entry = {
+    createdAt: firebase.database.ServerValue.TIMESTAMP,
     date: dateInput.value,
     amount: parseInt(amountInput.value),
     from: fromInput.value,
