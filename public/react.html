@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hello World</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.5.3/css/bulma.min.css">
+    <script src="https://unpkg.com/react@16/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://www.gstatic.com/firebasejs/4.3.1/firebase.js"></script>
+<script src="scripts/config.js"></script>
+<script type="text/babel">
+
+  class EntryForm extends React.Component {
+    constructor(props) {
+      super(props)
+      this.state = {
+        amount: '',
+        from: '',
+        to: '',
+        description: ''
+      };
+
+      this.handleChange = this.handleChange.bind(this);
+      this.handleSubmit = this.handleSubmit.bind(this);
+    }
+
+    handleChange(event) {
+      const target = event.target;
+      this.setState({[target.id]: target.value});
+    }
+
+    handleSubmit(event) {
+      event.preventDefault();
+
+      const entry = {
+        createdAt: firebase.database.ServerValue.TIMESTAMP,
+        date: this.state.date,
+        amount: parseInt(this.state.amount),
+        from: this.state.from,
+        to: this.state.to,
+        description: this.state.description
+      }
+      console.log(entry)
+
+      const entryListRef = firebase.database().ref('entries')
+      const newEntryRef = entryListRef.push()
+
+      newEntryRef.set(entry)
+        .then(() => {
+          console.log('Successful')
+        })
+        .catch(error => console.log(error))
+    }
+
+    render() {
+      return (
+              <form onSubmit={this.handleSubmit}>
+                  <input id="amount" min="1" onChange={this.handleChange} placeholder="amount" required step="1"
+                         type="number" pattern="\d+"/>
+                  <input id="from" type="text" value={this.state.from} onChange={this.handleChange} placeholder="from"
+                         required/>
+                  <input id="to" type="text" value={this.state.to} onChange={this.handleChange} placeholder="to"
+                         required/>
+                  <input id="description" type="text" value={this.state.description} onChange={this.handleChange}
+                         placeholder="description" required/>
+                  <input id="date" type="date" onChange={this.handleChange} title="date" required/>
+                  <input type="submit" value="Submit"/>
+              </form>
+      )
+    }
+  }
+
+  class EntryListItem extends React.Component {
+    render() {
+      const {amount, date, description, from, to} = this.props.entry
+      return (
+              <div className="columns tags">
+                  <span className="tag is-dark">{formatDate(date)}</span>
+                  <span className="tag is-warning">{amount}</span>
+                  <span className="tag is-primary">{from}</span>
+                  <span className="tag is-danger">{to}</span>
+                  <span className="tag is-light">{description}</span>
+              </div>
+      )
+    }
+  }
+
+  function formatDate(dateString) {
+    return new Date(dateString).toLocaleDateString('en-SG', {
+      month: 'short',
+      day: 'numeric',
+      weekday: 'short'
+    })
+  }
+
+  class EntryList extends React.Component {
+    render() {
+      const entryListItems = Object.entries(this.props.entries)
+        .map(([key, value]) => ({key, value}))
+        .sort(compareEntry)
+        .map(({key, value}) => (
+                <EntryListItem key={key} entry={value}/>
+        ))
+      return (
+              <div>{entryListItems}</div>
+      )
+    }
+  }
+
+  function compareEntry(a, b) {
+    const result = b.value.date.localeCompare(a.value.date)
+    return result !== 0 ? result : b.key.localeCompare(a.key)
+  }
+
+  class App extends React.Component {
+    constructor(props) {
+      super(props)
+      this.state = {
+        entries: {}
+      }
+    }
+
+    componentDidMount() {
+      firebase.auth().onAuthStateChanged(function (user) {
+        if (user) {
+          console.log('Signed in as ' + user.email);
+        } else {
+          alert('User is signed out')
+        }
+      }, function (error) {
+        console.log(error);
+      });
+
+      const database = firebase.database()
+      const entryListRef = database.ref('entries')
+
+      entryListRef.on('child_added', data => {
+        this.setState(previousState => {
+          const entries = {...previousState.entries, [data.key]: data.val()}
+          return {entries}
+        })
+      })
+
+      entryListRef.on('child_changed', data => {
+        console.log(new Date(), 'child_changed', data.key, data.val())
+      })
+
+      entryListRef.on('child_removed', data => {
+        this.setState(previousState => {
+          const {[data.key]: {}, ...entries} = previousState.entries
+          return {entries}
+        })
+      })
+    }
+
+    render() {
+      return (
+              <section className="section">
+                  <div className="container">
+                      <EntryForm/>
+                      <hr/>
+                      <EntryList entries={this.state.entries}/>
+                  </div>
+              </section>
+      )
+    }
+  }
+
+  ReactDOM.render(
+          <App/>,
+    document.getElementById('root')
+  )
+
+</script>
+</body>
+</html>
