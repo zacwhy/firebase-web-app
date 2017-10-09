@@ -162,22 +162,31 @@ class App extends React.Component {
     const entryListRef = database.ref('entries')
 
     entryListRef.on('child_added', data => {
-      this.setState(previousState => {
-        const entries = {...previousState.entries, [data.key]: data.val()}
-        return {entries}
-      })
+      this.setState(previousState => ({
+        entries: addEntry(previousState.entries, data)
+      }))
     })
 
     entryListRef.on('child_changed', data => {
-      console.log(new Date(), 'child_changed', data.key, data.val())
+      this.setState(previousState => ({
+        entries: addEntry(removeEntry(previousState.entries, data), data)
+      }))
     })
 
     entryListRef.on('child_removed', data => {
-      this.setState(previousState => {
-        const {[data.key]: {}, ...entries} = previousState.entries
-        return {entries}
-      })
+      this.setState(previousState => ({
+        entries: removeEntry(previousState.entries, data)
+      }))
     })
+
+    function addEntry(entries, data) {
+      return {...entries, [data.key]: data.val()}
+    }
+
+    function removeEntry(entries, data) {
+      const {[data.key]: {}, ...unchangedEntries} = entries
+      return unchangedEntries
+    }
   }
 
   render() {
