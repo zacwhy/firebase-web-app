@@ -8,20 +8,18 @@ class EntryForm extends React.Component {
       from: '',
       to: '',
       description: ''
-    };
+    }
 
-    this.handleChange = this.handleChange.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this);
+    this.handleChange = this.handleChange.bind(this)
+    this.handleSubmit = this.handleSubmit.bind(this)
   }
 
   handleChange(event) {
-    const target = event.target;
-    this.setState({[target.id]: target.value});
+    const target = event.target
+    this.setState({[target.id]: target.value})
   }
 
   handleSubmit(event) {
-    event.preventDefault();
-
     const entry = {
       createdAt: firebase.database.ServerValue.TIMESTAMP,
       date: this.state.date,
@@ -30,16 +28,19 @@ class EntryForm extends React.Component {
       to: this.state.to,
       description: this.state.description
     }
-    console.log(entry)
 
-    const entryListRef = firebase.database().ref('entries')
+    const database = firebase.database()
+    const entryListRef = database.ref('entries')
     const newEntryRef = entryListRef.push()
 
     newEntryRef.set(entry)
-      .then(() => {
-        console.log('Successful')
+      .then(() => console.log('Successful'))
+      .catch(error => {
+        console.log(error)
+        alert('Error creating new entry')
       })
-      .catch(error => console.log(error))
+
+    event.preventDefault()
   }
 
   render() {
@@ -82,7 +83,7 @@ class EntryForm extends React.Component {
         id: 'date',
         onChange: this.handleChange,
         required: true,
-        type: 'date',
+        type: 'date'
         // value: this.state.date
       }),
       e('input', {
@@ -138,15 +139,16 @@ class App extends React.Component {
   }
 
   componentDidMount() {
-    firebase.auth().onAuthStateChanged(function (user) {
+    firebase.auth().onAuthStateChanged(user => {
       if (user) {
-        console.log('Signed in as ' + user.email);
+        console.log('Signed in as ' + user.email)
       } else {
         alert('User is signed out')
       }
-    }, function (error) {
-      console.log(error);
-    });
+    }, error => {
+      console.log(error)
+      alert('Error with auth')
+    })
 
     const database = firebase.database()
     const entryListRef = database.ref('entries')
