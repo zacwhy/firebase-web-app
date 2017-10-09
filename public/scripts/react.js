@@ -34,7 +34,14 @@ class EntryForm extends React.Component {
     const newEntryRef = entryListRef.push()
 
     newEntryRef.set(entry)
-      .then(() => console.log('Successful'))
+      .then(() => {
+        this.setState({
+          amount: '',
+          from: '',
+          to: '',
+          description: ''
+        })
+      })
       .catch(error => {
         console.log(error)
         alert('Error creating new entry')
@@ -49,11 +56,12 @@ class EntryForm extends React.Component {
         id: 'amount',
         min: 1,
         onChange: this.handleChange,
-        pattern: '\d+',
+        // pattern: '\d+',
         placeholder: 'amount',
         required: true,
         step: 1,
-        type: 'number'
+        type: 'number',
+        value: this.state.amount
       }),
       e('input', {
         id: 'from',
