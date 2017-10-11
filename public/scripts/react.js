@@ -1,4 +1,51 @@
 const e = React.createElement
+const [a, div, nav, span] = ['a', 'div', 'nav', 'span'].map(React.createFactory)
+
+class Navbar extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = {active: false}
+  }
+
+  render() {
+    const activeableClassName = className => this.state.active ? [className, 'is-active'].join(' ') : className
+
+    return div({className: 'container'},
+      nav({className: 'navbar'},
+        div({className: 'navbar-brand'},
+          div({
+              className: activeableClassName('navbar-burger burger'),
+              onClick: () => {
+                this.setState(({active}) => ({active: !active}))
+              }
+            },
+            span(),
+            span(),
+            span()
+          )
+        ),
+        div({className: activeableClassName('navbar-menu')},
+          div({className: 'navbar-start'},
+
+            this.props.user ?
+              div({className: 'navbar-item has-dropdown is-hoverable'},
+                a({className: 'navbar-link is-active'}, `Welcome ${this.props.user.email}!`),
+                div({className: 'navbar-dropdown'},
+                  a({
+                    className: 'navbar-item',
+                    onClick: () => {
+                      firebase.auth().signOut().then(e => console.log(e))
+                    }
+                  }, 'Sign out')
+                )
+              ) :
+              a({className: 'navbar-item', href: 'login.html'}, 'Sign in')
+          )
+        )
+      )
+    )
+  }
+}
 
 class EntryForm extends React.Component {
   constructor(props) {
@@ -142,17 +189,14 @@ class App extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      entries: {}
+      entries: {},
+      user: null
     }
   }
 
   componentDidMount() {
     firebase.auth().onAuthStateChanged(user => {
-      if (user) {
-        console.log('Signed in as ' + user.email)
-      } else {
-        alert('User is signed out')
-      }
+      this.setState({user})
     }, error => {
       console.log(error)
       alert('Error with auth')
@@ -190,11 +234,14 @@ class App extends React.Component {
   }
 
   render() {
-    return e('section', {className: 'section'},
-      e('div', {className: 'container'},
-        e(EntryForm),
-        e('hr'),
-        e(EntryList, {entries: this.state.entries})
+    return div({},
+      e(Navbar, {user: this.state.user}),
+      this.state.user && e('section', {className: 'section'},
+        e('div', {className: 'container'},
+          e(EntryForm),
+          e('hr'),
+          e(EntryList, {entries: this.state.entries})
+        )
       )
     )
   }
