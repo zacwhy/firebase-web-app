@@ -1,5 +1,10 @@
+const types = ['a', 'div', 'form', 'hr', 'input', 'nav', 'section', 'span']
+
 const e = React.createElement
-const [a, div, nav, span] = ['a', 'div', 'nav', 'span'].map(React.createFactory)
+const h = types.reduce((acc, type) => ({
+  ...acc,
+  [type]: (...args) => e(type, ...args)
+}), {})
 
 class Navbar extends React.Component {
   constructor(props) {
@@ -10,28 +15,28 @@ class Navbar extends React.Component {
   render() {
     const activeableClassName = className => this.state.active ? [className, 'is-active'].join(' ') : className
 
-    return div({className: 'container'},
-      nav({className: 'navbar'},
-        div({className: 'navbar-brand'},
-          div({
+    return h.div({className: 'container'},
+      h.nav({className: 'navbar'},
+        h.div({className: 'navbar-brand'},
+          h.div({
               className: activeableClassName('navbar-burger burger'),
               onClick: () => {
                 this.setState(({active}) => ({active: !active}))
               }
             },
-            span(),
-            span(),
-            span()
+            h.span(),
+            h.span(),
+            h.span()
           )
         ),
-        div({className: activeableClassName('navbar-menu')},
-          div({className: 'navbar-start'},
+        h.div({className: activeableClassName('navbar-menu')},
+          h.div({className: 'navbar-start'},
 
             this.props.user ?
-              div({className: 'navbar-item has-dropdown is-hoverable'},
-                a({className: 'navbar-link is-active'}, `Welcome ${this.props.user.email}!`),
-                div({className: 'navbar-dropdown'},
-                  a({
+              h.div({className: 'navbar-item has-dropdown is-hoverable'},
+                h.a({className: 'navbar-link is-active'}, `Welcome ${this.props.user.email}!`),
+                h.div({className: 'navbar-dropdown'},
+                  h.a({
                     className: 'navbar-item',
                     onClick: () => {
                       firebase.auth().signOut().then(e => console.log(e))
@@ -39,7 +44,7 @@ class Navbar extends React.Component {
                   }, 'Sign out')
                 )
               ) :
-              a({className: 'navbar-item', href: 'login.html'}, 'Sign in')
+              h.a({className: 'navbar-item', href: 'login.html'}, 'Sign in')
           )
         )
       )
@@ -98,8 +103,8 @@ class EntryForm extends React.Component {
   }
 
   render() {
-    return e('form', {onSubmit: this.handleSubmit},
-      e('input', {
+    return h.form({onSubmit: this.handleSubmit},
+      h.input({
         id: 'amount',
         min: 1,
         onChange: this.handleChange,
@@ -110,7 +115,7 @@ class EntryForm extends React.Component {
         type: 'number',
         value: this.state.amount
       }),
-      e('input', {
+      h.input({
         id: 'from',
         onChange: this.handleChange,
         placeholder: 'from',
@@ -118,7 +123,7 @@ class EntryForm extends React.Component {
         type: 'text',
         value: this.state.from
       }),
-      e('input', {
+      h.input({
         id: 'to',
         onChange: this.handleChange,
         placeholder: 'to',
@@ -126,7 +131,7 @@ class EntryForm extends React.Component {
         type: 'text',
         value: this.state.to
       }),
-      e('input', {
+      h.input({
         id: 'description',
         onChange: this.handleChange,
         placeholder: 'description',
@@ -134,14 +139,14 @@ class EntryForm extends React.Component {
         type: 'text',
         value: this.state.description
       }),
-      e('input', {
+      h.input({
         id: 'date',
         onChange: this.handleChange,
         required: true,
         type: 'date'
         // value: this.state.date
       }),
-      e('input', {
+      h.input({
         type: 'submit',
         value: 'Submit'
       })
@@ -152,12 +157,12 @@ class EntryForm extends React.Component {
 class EntryListItem extends React.Component {
   render() {
     const {amount, date, description, from, to} = this.props.entry
-    return e('div', {className: 'columns tags'},
-      e('span', {className: 'tag is-dark'}, formatDate(date)),
-      e('span', {className: 'tag is-warning'}, amount),
-      e('span', {className: 'tag is-primary'}, from),
-      e('span', {className: 'tag is-danger'}, to),
-      e('span', {className: 'tag is-light'}, description)
+    return h.div({className: 'columns tags'},
+      h.span({className: 'tag is-dark'}, formatDate(date)),
+      h.span({className: 'tag is-warning'}, amount),
+      h.span({className: 'tag is-primary'}, from),
+      h.span({className: 'tag is-danger'}, to),
+      h.span({className: 'tag is-light'}, description)
     )
   }
 }
@@ -176,7 +181,7 @@ class EntryList extends React.Component {
       .map(([key, value]) => ({key, value}))
       .sort(compareEntry)
       .map(({key, value}) => e(EntryListItem, {key: key, entry: value}))
-    return e('div', null, ...entryListItems)
+    return h.div({}, ...entryListItems)
   }
 }
 
@@ -234,12 +239,14 @@ class App extends React.Component {
   }
 
   render() {
-    return div({},
+    return h.div({},
       e(Navbar, {user: this.state.user}),
-      this.state.user && e('section', {className: 'section'},
-        e('div', {className: 'container'},
+
+      this.state.user &&
+      h.section({className: 'section'},
+        h.div({className: 'container'},
           e(EntryForm),
-          e('hr'),
+          h.hr(),
           e(EntryList, {entries: this.state.entries})
         )
       )
