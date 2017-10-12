@@ -56,6 +56,8 @@ class EntryForm extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
+      date: new Date().toLocaleDateString('en-CA'), // TODO: this.props.date
+      // date: new Date().toISOString().split('T')[0]
       amount: '',
       from: '',
       to: '',
@@ -143,8 +145,8 @@ class EntryForm extends React.Component {
         id: 'date',
         onChange: this.handleChange,
         required: true,
-        type: 'date'
-        // value: this.state.date
+        type: 'date',
+        value: this.state.date
       }),
       h.input({
         type: 'submit',
