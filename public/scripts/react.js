@@ -203,7 +203,7 @@ class App extends React.Component {
     })
 
     const database = firebase.database()
-    const entryListRef = database.ref('entries')
+    const entryListRef = database.ref('entries').limitToLast(10)
 
     entryListRef.on('child_added', data => {
       this.setState(previousState => ({
