@@ -212,29 +212,33 @@ class App extends React.Component {
 
     entryListRef.on('child_added', data => {
       this.setState(previousState => ({
-        entries: addEntry(previousState.entries, data)
+        entries: addEntry(previousState.entries, data.key, data.val())
       }))
     })
 
     entryListRef.on('child_changed', data => {
       this.setState(previousState => ({
-        entries: addEntry(removeEntry(previousState.entries, data), data)
+        entries: changeEntry(previousState.entries, data.key, data.val())
       }))
     })
 
     entryListRef.on('child_removed', data => {
       this.setState(previousState => ({
-        entries: removeEntry(previousState.entries, data)
+        entries: removeEntry(previousState.entries, data.key)
       }))
     })
 
-    function addEntry(entries, data) {
-      return {...entries, [data.key]: data.val()}
+    function addEntry(entries, key, value) {
+      return {...entries, [key]: value}
     }
 
-    function removeEntry(entries, data) {
-      const {[data.key]: {}, ...unchangedEntries} = entries
+    function removeEntry(entries, key) {
+      const {[key]: {}, ...unchangedEntries} = entries
       return unchangedEntries
+    }
+
+    function changeEntry(entries, key, value) {
+      return addEntry(removeEntry(entries, key), key, value)
     }
   }
 
