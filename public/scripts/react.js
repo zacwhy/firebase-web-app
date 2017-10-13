@@ -161,7 +161,7 @@ class EntryListItem extends React.Component {
     const {amount, date, description, from, to} = this.props.entry
     return h.div({className: 'columns tags'},
       h.span({className: 'tag is-dark'}, formatDate(date)),
-      h.span({className: 'tag is-warning'}, amount),
+      h.span({className: 'tag is-warning'}, formatMoney(amount)),
       h.span({className: 'tag is-primary'}, from),
       h.span({className: 'tag is-danger'}, to),
       h.span({className: 'tag is-light'}, description)
@@ -175,6 +175,10 @@ function formatDate(dateString) {
     day: 'numeric',
     weekday: 'short'
   })
+}
+
+function formatMoney(cents) {
+  return (cents / 100).toFixed(2);
 }
 
 class EntryList extends React.Component {
