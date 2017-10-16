@@ -192,8 +192,33 @@ class EntryList extends React.Component {
 }
 
 function compareEntry(a, b) {
-  const result = b.value.date.localeCompare(a.value.date)
-  return result !== 0 ? result : b.key.localeCompare(a.key)
+  const compareDateDescending = compareStringFactory(x => x.value.date, false)
+  const compareCreatedAtDescending = compareNumberFactory(x => x.value.createdAt, false)
+  const compareKeyDescending = compareStringFactory(x => x.key, false)
+
+  const comparers = [
+    compareDateDescending,
+    compareCreatedAtDescending,
+    compareKeyDescending
+  ]
+
+  return compareWithComparers(a, b, comparers)
+}
+
+function compareNumberFactory(fn, ascending = true) {
+  return (a, b) => fn(ascending ? a : b) - fn(ascending ? b : a)
+}
+
+function compareStringFactory(fn, ascending = true) {
+  return (a, b) => fn(ascending ? a : b).localeCompare(fn(ascending ? b : a))
+}
+
+function compareWithComparers(a, b, [fn, ...fns]) {
+  const result = fn(a, b)
+  if (fns.length === 0 || result !== 0) {
+    return result
+  }
+  return compareWithComparers(a, b, fns)
 }
 
 class App extends React.Component {
