@@ -169,18 +169,6 @@ class EntryListItem extends React.Component {
   }
 }
 
-function formatDate(dateString) {
-  return new Date(dateString).toLocaleDateString('en-SG', {
-    month: 'short',
-    day: 'numeric',
-    weekday: 'short'
-  })
-}
-
-function formatMoney(cents) {
-  return (cents / 100).toFixed(2);
-}
-
 class EntryList extends React.Component {
   render() {
     const entryListItems = Object.entries(this.props.entries)
@@ -189,36 +177,6 @@ class EntryList extends React.Component {
       .map(({key, value}) => e(EntryListItem, {key: key, entry: value}))
     return h.div({}, ...entryListItems)
   }
-}
-
-function compareEntry(a, b) {
-  const compareDateDescending = compareStringFactory(x => x.value.date, false)
-  const compareCreatedAtDescending = compareNumberFactory(x => x.value.createdAt, false)
-  const compareKeyDescending = compareStringFactory(x => x.key, false)
-
-  const comparers = [
-    compareDateDescending,
-    compareCreatedAtDescending,
-    compareKeyDescending
-  ]
-
-  return compareWithComparers(a, b, comparers)
-}
-
-function compareNumberFactory(fn, ascending = true) {
-  return (a, b) => fn(ascending ? a : b) - fn(ascending ? b : a)
-}
-
-function compareStringFactory(fn, ascending = true) {
-  return (a, b) => fn(ascending ? a : b).localeCompare(fn(ascending ? b : a))
-}
-
-function compareWithComparers(a, b, [fn, ...fns]) {
-  const result = fn(a, b)
-  if (fns.length === 0 || result !== 0) {
-    return result
-  }
-  return compareWithComparers(a, b, fns)
 }
 
 class App extends React.Component {
@@ -290,3 +248,56 @@ class App extends React.Component {
 }
 
 ReactDOM.render(e(App), document.getElementById('root'))
+
+function formatDate(dateString) {
+  return new Date(dateString).toLocaleDateString('en-SG', {
+    month: 'short',
+    day: 'numeric',
+    weekday: 'short'
+  })
+}
+
+function formatMoney(cents) {
+  return (cents / 100).toFixed(2);
+}
+
+function compareEntry(a, b) {
+  const compositeCompare = composeComparers(
+    compareByDesc(x => x.value.date),
+    compareByDesc(x => x.value.createdAt),
+    compareByDesc(x => x.key)
+  )
+  return compositeCompare(a, b)
+}
+
+function compareBy(selector, ascending = true) {
+  return (a, b) => {
+    const x = selector(ascending ? a : b)
+    const y = selector(ascending ? b : a)
+    const type = typeof x
+
+    if (type === 'number') {
+      return x - y
+    }
+
+    if (type === 'string') {
+      return x.localeCompare(y)
+    }
+  }
+}
+
+function compareByDesc(selector) {
+  return compareBy(selector, false)
+}
+
+function composeComparers(...fns) {
+  const [fn, ...tail] = fns
+  return (a, b) => {
+    const result = fn(a, b)
+    if (tail.length === 0 || result !== 0) {
+      return result
+    }
+    const compositeCompare = composeComparers(...tail);
+    return compositeCompare(a, b)
+  }
+}
