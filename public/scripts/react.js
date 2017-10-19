@@ -246,15 +246,16 @@ class App extends React.Component {
   }
 
   render() {
+    const {entries, user} = this.state
     return h.div({},
-      e(Navbar, {user: this.state.user}),
+      e(Navbar, {user}),
 
-      this.state.user &&
+      user &&
       h.section({className: 'section'},
         h.div({className: 'container'},
           e(EntryForm),
           h.hr(),
-          e(EntryList, {entries: this.state.entries})
+          e(EntryList, {entries})
         )
       )
     )
