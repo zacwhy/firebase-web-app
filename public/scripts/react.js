@@ -1,10 +1,5 @@
-const types = ['a', 'div', 'form', 'hr', 'input', 'nav', 'section', 'span']
-
 const e = React.createElement
-const h = types.reduce((acc, type) => ({
-  ...acc,
-  [type]: (...args) => e(type, ...args)
-}), {})
+const h = hyperscriptHelpers(React.createElement)
 
 class Navbar extends React.Component {
   constructor(props) {
@@ -158,9 +153,8 @@ class EntryForm extends React.Component {
 
 class EntryListItem extends React.Component {
   render() {
-    const {amount, date, description, from, to} = this.props.entry
+    const {amount, description, from, to} = this.props.entry
     return h.div({className: 'columns tags'},
-      h.span({className: 'tag is-dark'}, formatDate(date)),
       h.span({className: 'tag is-warning'}, formatMoney(amount)),
       h.span({className: 'tag is-primary'}, from),
       h.span({className: 'tag is-danger'}, to),
@@ -169,13 +163,33 @@ class EntryListItem extends React.Component {
   }
 }
 
+class EntryListItemGroup extends React.Component {
+  render() {
+    const date = this.props.groupKey
+    const entryListItems = this.props.entries
+      .sort(orderByDesc(x => x.value.createdAt))
+      .map(({key, value}) => e(EntryListItem, {key, entry: value}))
+
+    return h.div({className: 'columns'},
+      h.div({className: 'column'},
+        h.div({className: 'columns tags'},
+          h.span({className: 'tag is-dark'}, formatDate(date))
+        ),
+        ...entryListItems
+      )
+    )
+  }
+}
+
 class EntryList extends React.Component {
   render() {
-    const entryListItems = Object.entries(this.props.entries)
-      .map(([key, value]) => ({key, value}))
-      .sort(compareEntry)
-      .map(({key, value}) => e(EntryListItem, {key: key, entry: value}))
-    return h.div({}, ...entryListItems)
+    const groups = groupBy(x => x.value.date)(objectEntries(this.props.entries))
+
+    const entryListItemGroups = objectEntries(groups)
+      .sort(orderByDesc(x => x.key))
+      .map(({key, value}) => e(EntryListItemGroup, {groupKey: key, entries: value}))
+
+    return h.div({}, ...entryListItemGroups)
   }
 }
 
@@ -249,6 +263,15 @@ class App extends React.Component {
 
 ReactDOM.render(e(App), document.getElementById('root'))
 
+
+function hyperscriptHelpers(createElement) {
+  const types = ['a', 'div', 'form', 'hr', 'input', 'nav', 'section', 'span']
+  return types.reduce((acc, type) => ({
+    ...acc,
+    [type]: (...args) => createElement(type, ...args)
+  }), {})
+}
+
 function formatDate(dateString) {
   return new Date(dateString).toLocaleDateString('en-SG', {
     month: 'short',
@@ -258,22 +281,30 @@ function formatDate(dateString) {
 }
 
 function formatMoney(cents) {
-  return (cents / 100).toFixed(2);
+  return (cents / 100).toFixed(2)
 }
 
-function compareEntry(a, b) {
-  const compositeCompare = composeComparers(
-    compareByDesc(x => x.value.date),
-    compareByDesc(x => x.value.createdAt),
-    compareByDesc(x => x.key)
-  )
-  return compositeCompare(a, b)
+function objectEntries(obj) {
+  return Object.entries(obj)
+    .map(([key, value]) => ({key, value}))
 }
 
-function compareBy(selector, ascending = true) {
+function groupBy(selector) {
+  return items => {
+    return items.reduce((acc, item) => {
+      const field = selector(item)
+      return {
+        ...acc,
+        [field]: (acc[field] || []).concat(item)
+      }
+    }, {})
+  }
+}
+
+function orderBy(selector, ascending = true) {
   return (a, b) => {
-    const x = selector(ascending ? a : b)
-    const y = selector(ascending ? b : a)
+    const [c, d] = [selector(a), selector(b)]
+    const [x, y] = ascending ? [c, d] : [d, c]
     const type = typeof x
 
     if (type === 'number') {
@@ -286,18 +317,6 @@ function compareBy(selector, ascending = true) {
   }
 }
 
-function compareByDesc(selector) {
-  return compareBy(selector, false)
-}
-
-function composeComparers(...fns) {
-  const [fn, ...tail] = fns
-  return (a, b) => {
-    const result = fn(a, b)
-    if (tail.length === 0 || result !== 0) {
-      return result
-    }
-    const compositeCompare = composeComparers(...tail);
-    return compositeCompare(a, b)
-  }
+function orderByDesc(selector) {
+  return orderBy(selector, false)
 }
