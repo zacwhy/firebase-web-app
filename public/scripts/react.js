@@ -197,6 +197,7 @@ class App extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
+      count: null,
       entries: {},
       user: null
     }
@@ -211,6 +212,11 @@ class App extends React.Component {
     })
 
     const database = firebase.database()
+
+    database.ref('count').on('value', snapshot => {
+      this.setState({count: snapshot.val()})
+    })
+
     const entryListRef = database.ref('entries').limitToLast(10)
 
     entryListRef.on('child_added', data => {
@@ -246,13 +252,22 @@ class App extends React.Component {
   }
 
   render() {
-    const {entries, user} = this.state
+    const {count, entries, user} = this.state
     return h.div({},
       e(Navbar, {user}),
 
       user &&
       h.section({className: 'section'},
         h.div({className: 'container'},
+          h.button({
+            onClick() {
+              if (!confirm('Confirm?')) {
+                return
+              }
+              const countRef = firebase.database().ref('count')
+              countRef.transaction(count => count + 1)
+            }
+          }, count),
           e(EntryForm),
           h.hr(),
           e(EntryList, {entries})
@@ -266,7 +281,7 @@ ReactDOM.render(e(App), document.getElementById('root'))
 
 
 function hyperscriptHelpers(createElement) {
-  const types = ['a', 'div', 'form', 'hr', 'input', 'nav', 'section', 'span']
+  const types = ['a', 'button', 'div', 'form', 'hr', 'input', 'nav', 'section', 'span']
   return types.reduce((acc, type) => ({
     ...acc,
     [type]: (...args) => createElement(type, ...args)
