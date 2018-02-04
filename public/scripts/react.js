@@ -330,6 +330,8 @@ function orderBy(selector, ascending = true) {
     if (type === 'string') {
       return x.localeCompare(y)
     }
+
+    throw 'Type is not supported: ' + type
   }
 }
 
