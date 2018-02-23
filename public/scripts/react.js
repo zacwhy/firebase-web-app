@@ -214,6 +214,7 @@ class App extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
+      aggregates: null,
       count: null,
       entries: {},
       user: null
@@ -230,8 +231,17 @@ class App extends React.Component {
 
     const database = firebase.database()
 
-    database.ref('count').on('value', snapshot => {
+    database.ref('count').once('value').then(snapshot => {
       this.setState({count: snapshot.val()})
+    })
+
+    database.ref('from').once('value').then(snapshot => snapshot.val()).then(froms => {
+      const aggregates = Object.keys(froms).reduce((acc, from) => {
+        const entries = froms[from]
+        const amount = Object.values(entries).reduce((acc, entry) => acc + entry.amount, 0)
+        return {...acc, [from]: amount}
+      }, {})
+      this.setState({aggregates})
     })
 
     const entryListRef = database.ref('entries').limitToLast(10)
@@ -270,26 +280,37 @@ class App extends React.Component {
 
   render() {
     const {count, entries, user} = this.state
-    return h.div({},
+    return h.div(
+      {},
       e(Navbar, {user}),
 
       user &&
-      h.section({className: 'section'},
-        h.div({className: 'container'},
-          h.button({
-            onClick() {
-              if (!confirm('Confirm?')) {
-                return
+        h.section(
+          {className: 'section'},
+          h.div(
+            {className: 'container'},
+            h.button({
+              onClick() {
+                if (!confirm('Confirm?')) {
+                  return
+                }
+                const countRef = firebase.database().ref('count')
+                countRef.transaction(count => count + 1)
               }
-              const countRef = firebase.database().ref('count')
-              countRef.transaction(count => count + 1)
-            }
-          }, count),
-          e(EntryForm),
-          h.hr(),
-          e(EntryList, {entries})
+            }, count),
+            e(EntryForm),
+            h.hr(),
+            e(EntryList, {entries}),
+            h.pre(
+              {
+                style:{
+                  marginTop: '1em'
+                }
+              },
+              JSON.stringify(this.state.aggregates, null, 2)
+            )
+          )
         )
-      )
     )
   }
 }
@@ -298,7 +319,7 @@ ReactDOM.render(e(App), document.getElementById('root'))
 
 
 function hyperscriptHelpers(createElement) {
-  const types = ['a', 'button', 'div', 'form', 'hr', 'input', 'nav', 'section', 'span']
+  const types = ['a', 'button', 'div', 'form', 'hr', 'input', 'nav', 'pre', 'section', 'span']
   return types.reduce((acc, type) => ({
     ...acc,
     [type]: (...args) => createElement(type, ...args)
