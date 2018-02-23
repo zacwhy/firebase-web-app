@@ -90,6 +90,7 @@ class EntryForm extends React.Component {
           to: '',
           description: ''
         })
+        this.amountInput.focus()
       })
       .catch(error => {
         console.log(error)
@@ -107,6 +108,7 @@ class EntryForm extends React.Component {
         onChange: this.handleChange,
         // pattern: '\d+',
         placeholder: 'amount',
+        ref: input => this.amountInput = input,
         required: true,
         step: 1,
         type: 'number',
