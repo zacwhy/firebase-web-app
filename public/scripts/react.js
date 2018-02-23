@@ -68,7 +68,9 @@ class EntryForm extends React.Component {
     this.setState({[target.id]: target.value})
   }
 
-  handleSubmit(event) {
+  async handleSubmit(event) {
+    event.preventDefault()
+
     const entry2 = {
       createdAt: firebase.database.ServerValue.TIMESTAMP,
       amount: parseInt(this.state.amount),
@@ -92,6 +94,11 @@ class EntryForm extends React.Component {
     const dateString = this.state.date.replace(/-/g, '/')
     updates[`/entries2/${dateString}/${newEntryKey}`] = entry2
 
+    const storeInFromGroup = await database.ref('config/fromList/' + entry.from).once('value').then(snapshot => snapshot.val())
+    if (storeInFromGroup) {
+      updates[`/from/${entry.from}/${newEntryKey}`] = entry
+    }
+
     database.ref().update(updates)
       .then(() => {
         this.setState({
@@ -106,8 +113,6 @@ class EntryForm extends React.Component {
         console.log(error)
         alert('Error creating new entry')
       })
-
-    event.preventDefault()
   }
 
   render() {
