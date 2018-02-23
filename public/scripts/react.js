@@ -69,20 +69,30 @@ class EntryForm extends React.Component {
   }
 
   handleSubmit(event) {
-    const entry = {
+    const entry2 = {
       createdAt: firebase.database.ServerValue.TIMESTAMP,
-      date: this.state.date,
       amount: parseInt(this.state.amount),
       from: this.state.from,
       to: this.state.to,
       description: this.state.description
+    }
+    const entry = {
+      ...entry2,
+      date: this.state.date
     }
 
     const database = firebase.database()
     const entryListRef = database.ref('entries')
     const newEntryRef = entryListRef.push()
 
-    newEntryRef.set(entry)
+    const newEntryKey = newEntryRef.key
+    const updates = {}
+    updates['/entries/' + newEntryKey] = entry
+
+    const dateString = this.state.date.replace(/-/g, '/')
+    updates[`/entries2/${dateString}/${newEntryKey}`] = entry2
+
+    database.ref().update(updates)
       .then(() => {
         this.setState({
           amount: '',
