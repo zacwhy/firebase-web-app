@@ -50,72 +50,21 @@ class Navbar extends React.Component {
 class EntryForm extends React.Component {
   constructor(props) {
     super(props)
-    this.state = {
-      date: new Date().toLocaleDateString('en-CA'), // TODO: this.props.date
-      // date: new Date().toISOString().split('T')[0]
-      amount: '',
-      from: '',
-      to: '',
-      description: ''
-    }
-
     this.handleChange = this.handleChange.bind(this)
     this.handleSubmit = this.handleSubmit.bind(this)
   }
 
-  handleChange(event) {
-    const target = event.target
-    this.setState({[target.id]: target.value})
+  handleSubmit(event) {
+    this.props.onSubmit(event)
   }
 
-  async handleSubmit(event) {
-    event.preventDefault()
-
-    const entry2 = {
-      createdAt: firebase.database.ServerValue.TIMESTAMP,
-      amount: parseInt(this.state.amount),
-      from: this.state.from,
-      to: this.state.to,
-      description: this.state.description
-    }
-    const entry = {
-      ...entry2,
-      date: this.state.date
-    }
-
-    const database = firebase.database()
-    const entryListRef = database.ref('entries')
-    const newEntryRef = entryListRef.push()
-
-    const newEntryKey = newEntryRef.key
-    const updates = {}
-    updates['/entries/' + newEntryKey] = entry
-
-    const dateString = this.state.date.replace(/-/g, '/')
-    updates[`/entries2/${dateString}/${newEntryKey}`] = entry2
-
-    const storeInFromGroup = await database.ref('config/fromList/' + entry.from).once('value').then(snapshot => snapshot.val())
-    if (storeInFromGroup) {
-      updates[`/from/${entry.from}/${newEntryKey}`] = entry
-    }
-
-    database.ref().update(updates)
-      .then(() => {
-        this.setState({
-          amount: '',
-          from: '',
-          to: '',
-          description: ''
-        })
-        this.amountInput.focus()
-      })
-      .catch(error => {
-        console.log(error)
-        alert('Error creating new entry')
-      })
+  handleChange(event) {
+    const {id, value} = event.target
+    this.props.onChange({field: id, value})
   }
 
   render() {
+    const entry = this.props.entry
     return h.form({onSubmit: this.handleSubmit},
       h.input({
         id: 'amount',
@@ -127,7 +76,7 @@ class EntryForm extends React.Component {
         required: true,
         step: 1,
         type: 'number',
-        value: this.state.amount
+        value: entry.amount
       }),
       h.input({
         id: 'from',
@@ -135,7 +84,7 @@ class EntryForm extends React.Component {
         placeholder: 'from',
         required: true,
         type: 'text',
-        value: this.state.from
+        value: entry.from
       }),
       h.input({
         id: 'to',
@@ -143,7 +92,7 @@ class EntryForm extends React.Component {
         placeholder: 'to',
         required: true,
         type: 'text',
-        value: this.state.to
+        value: entry.to
       }),
       h.input({
         id: 'description',
@@ -151,19 +100,16 @@ class EntryForm extends React.Component {
         placeholder: 'description',
         required: true,
         type: 'text',
-        value: this.state.description
+        value: entry.description
       }),
       h.input({
         id: 'date',
         onChange: this.handleChange,
         required: true,
         type: 'date',
-        value: this.state.date
+        value: entry.date
       }),
-      h.input({
-        type: 'submit',
-        value: 'Submit'
-      })
+      h.input({type: 'submit', value: 'Submit'})
     )
   }
 }
@@ -171,11 +117,24 @@ class EntryForm extends React.Component {
 class EntryListItem extends React.Component {
   render() {
     const {amount, description, from, to} = this.props.entry
-    return h.div({className: 'columns tags'},
-      h.span({className: 'tag is-warning'}, formatMoney(amount)),
-      h.span({className: 'tag is-primary'}, from),
-      h.span({className: 'tag is-danger'}, to),
-      h.span({className: 'tag is-light'}, description)
+    return h.div(
+      {className: 'columns tags'},
+      h.a(
+        {
+          href: '',
+          onClick: event => {
+            event.preventDefault()
+            this.props.onItemSelect({
+              entryKey: this.props.entryKey,
+              entry: this.props.entry
+            })
+          }
+        },
+        h.span({className: 'tag is-warning'}, formatMoney(amount)),
+        h.span({className: 'tag is-primary'}, from),
+        h.span({className: 'tag is-danger'}, to),
+        h.span({className: 'tag is-light'}, description)
+      )
     )
   }
 }
@@ -184,8 +143,13 @@ class EntryListItemGroup extends React.Component {
   render() {
     const date = this.props.groupKey
     const entryListItems = this.props.entries
-      .sort(orderByDesc(x => x.value.createdAt))
-      .map(({key, value}) => e(EntryListItem, {key, entry: value}))
+          .sort(orderByDesc(x => x.value.createdAt))
+          .map(({key, value}) => e(EntryListItem, {
+            key,
+            entryKey: key,
+            entry: value,
+            onItemSelect: this.props.onItemSelect
+          }))
 
     return h.div({className: 'columns'},
       h.div({className: 'column'},
@@ -203,8 +167,13 @@ class EntryList extends React.Component {
     const groups = groupBy(x => x.value.date)(objectEntries(this.props.entries))
 
     const entryListItemGroups = objectEntries(groups)
-      .sort(orderByDesc(x => x.key))
-      .map(({key, value}) => e(EntryListItemGroup, {groupKey: key, entries: value}))
+          .sort(orderByDesc(x => x.key))
+          .map(({key, value}) => e(
+            EntryListItemGroup, {
+              groupKey: key,
+              entries: value,
+              onItemSelect: this.props.onItemSelect
+            }))
 
     return h.div({}, ...entryListItemGroups)
   }
@@ -216,8 +185,23 @@ class App extends React.Component {
     this.state = {
       aggregates: null,
       count: null,
+      entry: this.newForm(),
       entries: {},
       user: null
+    }
+    this.handleItemSelect = this.handleItemSelect.bind(this)
+    this.onFormFieldChange = this.onFormFieldChange.bind(this)
+    this.resetForm = this.resetForm.bind(this)
+    this.submitEntry = this.submitEntry.bind(this)
+  }
+
+  newForm(date = null) {
+    return {
+      date: date || new Date().toLocaleDateString('en-CA'),
+      amount: '',
+      from: '',
+      to: '',
+      description: ''
     }
   }
 
@@ -278,6 +262,38 @@ class App extends React.Component {
     }
   }
 
+  onFormFieldChange(event) {
+    const e = event
+    this.setState(prevState => ({
+      entry: {
+        ...prevState.entry,
+        [e.field]: e.value
+      }
+    }))
+  }
+
+  resetForm() {
+    const entry = this.newForm(this.state.entry.date)
+    this.setState({entry})
+  }
+
+  submitEntry(event) {
+    event.preventDefault()
+    submitEntry2(this.state.entry).then(() => {
+      this.resetForm()
+      // this.amountInput.focus()
+    }).catch(error => {
+      console.error(error)
+      alert('Error submitting entry')
+    })
+  }
+
+  handleItemSelect(event) {
+    this.setState({
+      entry: this.state.entries[event.entryKey]
+    })
+  }
+
   render() {
     const {count, entries, user} = this.state
     return h.div(
@@ -298,12 +314,20 @@ class App extends React.Component {
                 countRef.transaction(count => count + 1)
               }
             }, count),
-            e(EntryForm),
+            e(EntryForm, {
+              entry: this.state.entry,
+              onChange: this.onFormFieldChange,
+              onSubmit: this.submitEntry
+            }),
+            h.button({onClick: this.resetForm}, 'Reset'),
             h.hr(),
-            e(EntryList, {entries}),
+            e(EntryList, {
+              entries,
+              onItemSelect: this.handleItemSelect
+            }),
             h.pre(
               {
-                style:{
+                style: {
                   marginTop: '1em'
                 }
               },
@@ -317,6 +341,35 @@ class App extends React.Component {
 
 ReactDOM.render(e(App), document.getElementById('root'))
 
+
+async function submitEntry2(attributes) {
+  const entry2 = {
+    createdAt: firebase.database.ServerValue.TIMESTAMP,
+    amount: parseInt(attributes.amount),
+    from: attributes.from,
+    to: attributes.to,
+    description: attributes.description
+  }
+  const entry = {...entry2, date: attributes.date}
+
+  const database = firebase.database()
+  const entryListRef = database.ref('entries')
+  const newEntryRef = entryListRef.push()
+
+  const newEntryKey = newEntryRef.key
+  const updates = {}
+  updates['/entries/' + newEntryKey] = entry
+
+  const dateString = attributes.date.replace(/-/g, '/')
+  updates[`/entries2/${dateString}/${newEntryKey}`] = entry2
+
+  const storeInFromGroup = await database.ref('config/fromList/' + entry.from).once('value').then(snapshot => snapshot.val())
+  if (storeInFromGroup) {
+    updates[`/from/${entry.from}/${newEntryKey}`] = entry
+  }
+
+  return database.ref().update(updates)
+}
 
 function hyperscriptHelpers(createElement) {
   const types = ['a', 'button', 'div', 'form', 'hr', 'input', 'nav', 'pre', 'section', 'span']
