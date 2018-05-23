@@ -2,47 +2,21 @@ const e = React.createElement
 const h = hyperscriptHelpers(React.createElement)
 
 class Navbar extends React.Component {
-  constructor(props) {
-    super(props)
-    this.state = {active: false}
+  render() {
+    return this.props.user ? this.renderSignedIn() : this.renderSignIn()
   }
 
-  render() {
-    const activeableClassName = className => this.state.active ? [className, 'is-active'].join(' ') : className
+  renderSignIn() {
+    return h.a({href: 'login.html'}, 'Sign in')
+  }
 
-    return h.div({className: 'container'},
-      h.nav({className: 'navbar'},
-        h.div({className: 'navbar-brand'},
-          h.div({
-              className: activeableClassName('navbar-burger burger'),
-              onClick: () => {
-                this.setState(({active}) => ({active: !active}))
-              }
-            },
-            h.span(),
-            h.span(),
-            h.span()
-          )
-        ),
-        h.div({className: activeableClassName('navbar-menu')},
-          h.div({className: 'navbar-start'},
-
-            this.props.user ?
-              h.div({className: 'navbar-item has-dropdown is-hoverable'},
-                h.a({className: 'navbar-link is-active'}, `Welcome ${this.props.user.email}!`),
-                h.div({className: 'navbar-dropdown'},
-                  h.a({
-                    className: 'navbar-item',
-                    onClick: () => {
-                      firebase.auth().signOut().then(e => console.log(e))
-                    }
-                  }, 'Sign out')
-                )
-              ) :
-              h.a({className: 'navbar-item', href: 'login.html'}, 'Sign in')
-          )
-        )
-      )
+  renderSignedIn() {
+    return h.div(
+      {},
+      this.props.user.email,
+      h.a({
+        onClick: () => firebase.auth().signOut().then(console.log)
+      }, 'Sign out')
     )
   }
 }
